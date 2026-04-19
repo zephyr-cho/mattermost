@@ -1,0 +1,46 @@
+# Makefile.staffora
+# Staffora 자체 빌드 커맨드 (Mattermost for Staffora)
+#
+# 사용법:
+#   make -f Makefile.staffora                              # 기본 빌드 (latest 기준)
+#   make -f Makefile.staffora UPSTREAM_TAG=v10.4.1        # 특정 upstream 버전
+#   make -f Makefile.staffora UPSTREAM_TAG=v10.4.1 push   # 레지스트리 push
+#   make -f Makefile.staffora REGISTRY=ghcr.io/zephyr-cho UPSTREAM_TAG=v10.4.1 push
+#
+# 이미지 태그 형식: staffora/mattermost:<upstream-tag>-staffora<N>
+#   예: staffora/mattermost:v10.4.1-staffora1
+
+UPSTREAM_TAG ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo "latest")
+BUILD_NUMBER  ?= 1
+REGISTRY      ?= docker.io
+IMAGE_NAME    := staffora/mattermost
+IMAGE_TAG     := $(REGISTRY)/$(IMAGE_NAME):$(UPSTREAM_TAG)-staffora$(BUILD_NUMBER)
+PLATFORM      ?= linux/arm64
+
+.PHONY: all build push tag info
+
+all: build
+
+info:
+	@echo "Upstream tag  : $(UPSTREAM_TAG)"
+	@echo "Build number  : $(BUILD_NUMBER)"
+	@echo "Image tag     : $(IMAGE_TAG)"
+	@echo "Platform      : $(PLATFORM)"
+
+# v1: thin wrapper around the official Team Edition image.
+# Sets staffora branding env vars; webapp static branding (title/favicon/logo)
+# requires a full source build (see source changes in server/ and webapp/).
+build: info
+	docker buildx build \
+		--platform $(PLATFORM) \
+		--build-arg UPSTREAM_TAG=$(UPSTREAM_TAG) \
+		-f Dockerfile.staffora \
+		-t $(IMAGE_TAG) \
+		--load \
+		.
+
+push: build
+	docker push $(IMAGE_TAG)
+
+tag:
+	@echo $(IMAGE_TAG)

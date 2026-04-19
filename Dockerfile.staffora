@@ -1,0 +1,22 @@
+# Dockerfile.staffora
+# Staffora thin-wrapper image for Mattermost for Staffora (v1 branding).
+#
+# v1 strategy: extends the official Team Edition image with staffora env vars.
+# The server-side SiteName is overridden at runtime via ENV.
+# Webapp static file branding (title, favicon, logo) requires a full source build
+# and will be addressed in a future iteration.
+#
+# Build:
+#   docker build --build-arg UPSTREAM_TAG=v10.4.1 -f Dockerfile.staffora -t staffora/mattermost:v10.4.1-staffora1 .
+#
+# Run: use docker-compose.yml in infra/terraform/prod/cloud-init/app-server.yaml
+
+ARG UPSTREAM_TAG=latest
+FROM mattermost/mattermost-team-edition:${UPSTREAM_TAG}
+
+LABEL org.opencontainers.image.title="Mattermost for Staffora" \
+      org.opencontainers.image.vendor="Staffora" \
+      org.opencontainers.image.source="https://github.com/zephyr-cho/mattermost"
+
+# Server-side site name branding (takes effect on first config initialization)
+ENV MM_SERVICESETTINGS_SITENAME="Mattermost for Staffora"
